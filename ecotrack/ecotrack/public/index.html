@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8"><title>EcoTrack 🌱</title>
+  <style>
+    * { box-sizing:border-box; margin:0; padding:0; }
+    body { font-family:sans-serif; background:#0D0D1A; color:#C8C8D8;
+           display:flex; justify-content:center; align-items:center; min-height:100vh; }
+    .card { background:#1A1A30; border:1px solid #2A2A45; border-radius:12px; padding:40px; width:440px; }
+    h1    { color:#fff; font-size:22px; margin-bottom:4px; }
+    .sub  { font-size:13px; color:#6868A0; margin-bottom:32px; }
+    label { display:block; font-size:12px; font-weight:600; letter-spacing:.06em;
+            text-transform:uppercase; color:#8888AA; margin-bottom:8px; }
+    select, input { width:100%; padding:11px 14px; background:#0D0D1A; border:1px solid #2A2A45;
+                    border-radius:8px; color:#fff; font-size:14px; margin-bottom:20px; outline:none; }
+    select:focus, input:focus { border-color:#5C4FE5; }
+    button { width:100%; padding:13px; background:#5C4FE5; color:#fff; border:none;
+             border-radius:8px; font-size:15px; font-weight:600; cursor:pointer; }
+    button:hover:not(:disabled) { background:#7B6FF0; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .result { margin-top:20px; padding:20px; background:#0D0D1A;
+              border:1px solid #2A2A45; border-radius:8px; display:none; }
+    .result.success { border-color:#1DC9A4; }
+    .result.error   { border-color:#F05C5C; }
+    .co2v { font-size:36px; font-weight:700; color:#1DC9A4; }
+    .co2u { font-size:16px; color:#1DC9A4; }
+    .co2l { font-size:12px; color:#6868A0; margin-top:6px; }
+    .err  { color:#F05C5C; font-size:13px; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <h1>🌱 EcoTrack</h1>
+  <p class="sub">Registre uma atividade e veja o impacto em CO₂</p>
+
+  <label>Tipo de atividade</label>
+  <select id="tipo" onchange="atualizarLabel()">
+    <option value="passenger_flight-route_type_domestic-aircraft_type_na-distance_na-class_na-rf_included-distance_uplift_included"
+            data-unidade="km">✈️  Voo</option>
+    <option value="passenger_vehicle-vehicle_type_car-fuel_source_petrol-engine_size_na-vehicle_age_na-vehicle_weight_na"
+            data-unidade="km">🚗  Carro (gasolina)</option>
+    <option value="electricity-supply_grid-source_supplier_mix"
+            data-unidade="kWh">⚡  Consumo de energia</option>
+  </select>
+
+  <label id="labelValor">Distância (km)</label>
+  <input type="number" id="valor" placeholder="ex: 1000" min="1">
+
+  <button id="btn" onclick="registrar()">Calcular emissão</button>
+  <div class="result" id="result"></div>
+</div>
+
+<script>
+  function atualizarLabel() {
+    const sel = document.getElementById('tipo')
+    const un  = sel.options[sel.selectedIndex].dataset.unidade
+    document.getElementById('labelValor').textContent = un === 'kWh' ? 'Consumo (kWh)' : 'Distância (km)'
+    document.getElementById('valor').placeholder = un === 'kWh' ? 'ex: 150' : 'ex: 1000'
+  }
+
+  async function registrar() {
+    const sel    = document.getElementById('tipo')
+    const tipo   = sel.value
+    const unidade = sel.options[sel.selectedIndex].dataset.unidade
+    const valor  = Number(document.getElementById('valor').value)
+    const btn    = document.getElementById('btn')
+
+    if (!valor || valor < 1) { mostrar('error','<span class="err">Informe um valor válido.</span>'); return }
+
+    btn.disabled = true; btn.textContent = 'Calculando...'
+    document.getElementById('result').style.display = 'none'
+
+    try {
+      const res  = await fetch('/activity', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ tipo, valor, unidade })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      mostrar('success',`
+        <div class="co2v">${data.co2e.toFixed(2)} <span class="co2u">${data.co2e_unit}</span></div>
+        <div class="co2l">de CO₂ emitido nessa atividade</div>`)
+    } catch(err) {
+      mostrar('error',`<span class="err">Erro: ${err.message}</span>`)
+    } finally {
+      btn.disabled = false; btn.textContent = 'Calcular emissão'
+    }
+  }
+
+  function mostrar(t, html) {
+    const el = document.getElementById('result')
+    el.className = `result ${t}`; el.innerHTML = html; el.style.display = 'block'
+  }
+
+  document.getElementById('valor').addEventListener('keydown', e => { if(e.key==='Enter') registrar() })
+</script>
+</body></html>
