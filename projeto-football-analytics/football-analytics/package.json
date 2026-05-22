@@ -1,0 +1,22 @@
+{
+  "name": "football-analytics",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "devDependencies": {
+    "@types/node": "^25.6.0",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^6.0.3"
+  },
+  "dependencies": {
+    "airtable": "^0.12.2",
+    "axios": "^1.15.2",
+    "dotenv": "^17.4.2"
+  }
+}
